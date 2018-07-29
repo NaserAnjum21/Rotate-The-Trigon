@@ -28,6 +28,7 @@ int color_select[8];
 
 int gap=0;
 int gap2=0;
+int gap_offset=3;
 
 int got_it=0;
 int game_over=0;
@@ -105,12 +106,17 @@ void trigon(int a,int b,int c)
 				PORTA=a*8+4;
 			}
 		}
+		PORTA=8;
 		if(i==7)
 		{
 			for(int j=0;j<1;j++)
 			{
 				PORTA=b*8+2;
 				PORTA=b*8+3;
+			}
+			//_delay_ms(0.5);
+			for(int j=0;j<1;j++)
+			{
 				PORTA=c*8+4;
 				PORTA=c*8+5;
 			}
@@ -145,7 +151,7 @@ void scrolling()
 	int cnt=rand()%3;
 	int prod=1;
 	for(int k=0;k<cnt;k++) prod=prod*2;
-	if(gap>=3)
+	if(gap>=gap_offset)
 	{
 		clm[0]=prod; gap=0;
 	}
@@ -166,10 +172,9 @@ void scrolling()
 
 			_delay_ms(1.5);
 		}
-		if(temp==1) PORTB=1;
-		else if(temp==2) PORTB=2;
-		else if(temp==4) PORTB=3;
-		else PORTB=0;
+		if(temp==4) PORTB=temp-1;
+		else PORTB=temp;
+
 		PORTD=0;
 	}
 	
@@ -220,12 +225,17 @@ void sliding()
 		for(int k=0;k<1000;k++)
 		{
 			func_trigon();
+
+			get_color= (PINB & 0b00001100) >> 2;
+			if(get_color>=1 && get_color<=3) got_it=1;
+			else got_it=0;
+
+			if(get_color==2) get_color=1; //swapping color value
+			else if(get_color==1) get_color=2;
+
 			if(k==0)
 			{
-				get_color= (PINB & 0b00001100) >> 2;
-
-				if(get_color==2) get_color=1;
-				else if(get_color==1) get_color=2;
+				
 
 
 				gap2++;
@@ -249,7 +259,7 @@ void sliding()
 				if(got_it) PORTD=row[i];
 				else PORTD=0;
 				full_line_color(color_select[i]);
-				if(gap2 >= 3)
+				if(gap2 >= gap_offset)
 				{
 					gap2=0; 
 				}
@@ -286,6 +296,14 @@ void tilt_sensor_check()
 	else PORTC=0;
 }
 
+void init()
+{
+	PORTA=8;
+	PORTB=1;
+	PORTC=0;
+	PORTD=0;
+}
+
 int main(void)
 {
 	DDRA=0xFF;
@@ -295,6 +313,8 @@ int main(void)
 	//DDRB=0b00000011;
 	uint16_t count=0;
 
+
+	//init();
 	
 	for(int i=0;i<8;i++)
 	{
@@ -305,12 +325,12 @@ int main(void)
 	//PORTD=0b0000001;
 	while(1)
 	{
-		//scrolling();
+		scrolling();
 
 		
-		tilt_sensor_check();
+		//tilt_sensor_check();
 		//func_trigon();
-		sliding();
+		//sliding();
 		
 	}
 	
