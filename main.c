@@ -24,6 +24,7 @@
 #define loop 1
 
 #include <avr/io.h>
+#include <avr/eeprom.h>
 #include <util/delay.h>
 #include "lcd.h"
 //#include "lcd2.h"
@@ -327,9 +328,10 @@ void sliding()
 		{
 			game_over=1;
 			Lcd4_Clear(); Lcd4_Set_Cursor(1,0); Lcd4_Write_String("GAME OVER"); 
+			//LCD_Clear(); LCD_String("GAME OVER"); // LCD_String("Score: ");	LCD_Command(0xC0);	LCD_String(score_str);
 			
 		}
-		else if(last_color>=0)
+		else if(last_color>=0 && !game_over)
 		{
 			score++;
 		}
@@ -387,9 +389,7 @@ void lcd2()
 {
 	LCD_Init();			/* Initialization of LCD*/
 
-	LCD_String("Score: ");	/* Write string on 1st line of LCD*/
-	LCD_Command(0xC0);		/* Go to 2nd line*/
-	LCD_String(score_str);
+	LCD_String("Score: ");	LCD_Command(0xC0);	LCD_String(score_str);
 
 }
 
@@ -428,6 +428,23 @@ void upper_mcu()
 	DDRC=0x00;
 }
 
+char R_array[3],W_array[3] = "10";
+
+void high_score()
+{
+	memset(R_array,0,3);
+	eeprom_read_block(R_array,0,strlen(W_array));
+	
+	int prev=atoi(R_array);
+	if(prev < score)
+	{
+		itoa(score,R_array,10);
+		eeprom_write_block(R_array,0,strlen(W_array));
+	}
+	Lcd4_Set_Cursor(2,4); Lcd4_Write_String("HS: "); Lcd4_Write_String(R_array);
+}
+
+
 int main(void)
 {
 	DDRA=0xFF;
@@ -435,6 +452,9 @@ int main(void)
 	
 	lower_mcu();
 	//upper_mcu();
+
+	//eeprom_write_block("5",0,strlen(W_array));
+	
 
 	uint16_t count=0;
 
@@ -449,8 +469,9 @@ int main(void)
 	PORTB=0;
 	
 
-	Lcd4_Init(); Lcd4_Clear(); Lcd4_Set_Cursor(1,1); Lcd4_Write_String("Score: "); 
+	Lcd4_Init(); Lcd4_Set_Cursor(1,1); Lcd4_Write_String("Score: ");
 	//lcd2();
+	//LCD_Init(); LCD_String("Score: ");	
 	
 	//PORTD=0b0000001;
 	while(1)
@@ -459,9 +480,11 @@ int main(void)
 
 		itoa(score,score_str,10);
 		Lcd4_Set_Cursor(2,1); Lcd4_Write_String(score_str);
+		//LCD_Command(0xC0);	LCD_String(score_str);
 		
 		tilt_sensor_check(); sliding();
 		
+		if(game_over) high_score();
 		//Lcd4_Clear();
 	}
 	
